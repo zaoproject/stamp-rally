@@ -164,12 +164,24 @@
             for (let i = 0; i < totalStamps; i++) {
                 const stampItem = document.createElement('div');
                 stampItem.classList.add('stamp-item');
+                // ...
                 if (stamps[i]) {
                     stampItem.classList.add('stamped');
                     const img = document.createElement('img');
-                    // 任意のスタンプ画像を設定
-                    img.src = 'https://via.placeholder.com/60/28a745/FFFFFF?text=✓'; // 取得済みスタンプの仮画像
+                    // スタンプのIDに基づいて画像ファイルを動的に設定
+                    // 例えば、stamp1.png, stamp2.png, ... となるように
+                    img.src = `stamp${i + 1}.png`; // ここを修正！
+                    // もし画像が images/ フォルダにある場合:
+                    // img.src = `stamp${i + 1}.png`;
+                
+                    // 画像サイズを明示的に指定したい場合は、CSSで制御するのが一般的ですが、
+                    // ここで直接設定することも可能です（ただし、推奨はCSSでの制御）
+                    // img.width = 150;
+                    // img.height = 150;
+
                     stampItem.appendChild(img);
+                }
+                // ...
                 } else {
                     const span = document.createElement('span');
                     span.textContent = `スタンプ ${i + 1}`;
