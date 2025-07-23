@@ -127,6 +127,10 @@
         <p class="camera-permission-info">
             ※QRコードスキャン時にはカメラの許可を求められますので、**「許可」**を選択してください。
         </p>
+        <p class="camera-instruction">
+        <span class="highlight">重要：</span>QRコードスキャン時には、ブラウザからカメラの使用許可を求められます。表示されたダイアログで必ず「**許可**」を選択してください。
+    もしカメラが起動しない場合は、スマートフォンの設定アプリからChromeのカメラアクセスを許可してください。
+        </p>
         <button id="qr-scanner-button">QRコードをスキャンしてスタンプを取得</button>
 
         <div id="qr-reader"></div>
@@ -235,9 +239,20 @@
                     html5QrCode.stop().then(() => {
                         qrReader.style.display = 'none';
                         checkCompletion();
-                    }).catch(err => {
-                        console.error("QRスキャナー停止エラー:", err);
-                        // スキャナー停止時のエラーはユーザーには表示しない
+                    }).catch((err) => {
+                        let userMessage = `カメラの起動に失敗しました。`;
+                        if (err.name === 'NotAllowedError') {
+                             userMessage += `カメラの使用が許可されていません。スマートフォンの「設定」アプリから、Chrome（または利用中のブラウザ）のカメラアクセスを許可してください。`;
+                        } else if (err.name === 'NotFoundError') {
+                        userMessage += `利用可能なカメラが見つかりませんでした。スマートフォンにカメラが搭載されているか、他のアプリで使用中でないかご確認ください。`;
+                         } else {
+                          userMessage += `予期せぬエラーが発生しました（${err.message}）。ブラウザを再起動するか、スマートフォンを再起動してもう一度お試しください。`;
+                        }
+                        qrReaderResults.textContent = userMessage;
+                        qrReaderResults.style.color = '#dc3545'; // エラーメッセージの色を強調
+                        qrReader.style.display = 'none';
+                        qrScannerButton.style.display = 'block';
+                        console.error("カメラ起動エラー:", err);
                     });
                 },
                 (errorMessage) => {
