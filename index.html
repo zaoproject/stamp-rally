@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易QRコードリーダー</title>
+    <title>スマートフォンスタンプラリー</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -11,29 +11,68 @@
             padding: 20px;
             background-color: #f4f4f4;
             color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
         }
         .container {
-            max-width: 500px;
-            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
         }
         h1 {
+            text-align: center;
             color: #007bff;
+        }
+        .stamp-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stamp-item {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background-color: #f9f9f9;
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .stamp-item.stamped {
+            border: 2px solid #28a745;
+            background-color: #e6ffe6;
+        }
+        .stamp-item img {
+            max-width: 80%;
+            height: auto;
+            display: block; /* 常に表示 */
+            filter: grayscale(100%); /* 未取得時はグレーアウト */
+            opacity: 0.6; /* 未取得時は少し透明に */
+        }
+        .stamp-item.stamped img {
+            filter: grayscale(0%); /* 取得済み時はカラー */
+            opacity: 1; /* 取得済み時は不透明に */
+        }
+        .stamp-item .stamp-label { /* スタンプの下のラベル用 */
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #555;
+            position: absolute; /* 画像と重ならないように調整 */
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
         }
         #qr-scanner-button {
             display: block;
-            width: 80%;
+            width: 100%;
             padding: 15px;
-            margin: 20px auto;
-            background-color: #28a745; /* 緑系の色に */
+            margin-top: 30px;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 5px;
@@ -42,36 +81,37 @@
             transition: background-color 0.3s ease;
         }
         #qr-scanner-button:hover {
-            background-color: #218838;
+            background-color: #0056b3;
         }
         #qr-reader {
             width: 100%;
             margin-top: 20px;
             display: none; /* 初期状態では非表示 */
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            overflow: hidden; /* ビデオが枠からはみ出さないように */
         }
         #qr-reader video {
-            width: 100% !important; /* ライブラリのスタイルを上書き */
-            height: auto !important; /* ライブラリのスタイルを上書き */
+            width: 100% !important;
+            height: auto !important;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
         #qr-reader-results {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e2e3e5;
-            border-radius: 5px;
-            min-height: 50px;
-            word-break: break-all; /* 長いURLなどで改行 */
-            text-align: left;
-        }
-        .error-message {
-            color: #dc3545; /* 赤色 */
-            font-weight: bold;
             margin-top: 10px;
+            font-weight: bold;
+            color: #dc3545;
+            text-align: center;
         }
-        .info-message {
-            color: #007bff; /* 青色 */
+        #completion-message {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #28a745;
+            font-weight: bold;
+            display: none;
+        }
+        .camera-permission-info { /* カメラ許可の説明メッセージ用スタイル */
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
             margin-top: 10px;
         }
     </style>
@@ -79,83 +119,200 @@
 </head>
 <body>
     <div class="container">
-        <h1>QRコードリーダー</h1>
-        <p class="info-message">
-            「スキャン開始」ボタンを押すとカメラが起動します。<br>
-            ブラウザからカメラの許可を求められた場合は「**許可**」を選択してください。
-        </p>
+        <h1>スマートフォンスタンプラリー</h1>
 
-        <button id="qr-scanner-button">スキャン開始</button>
-
-        <div id="qr-reader"></div>
-
-        <h2>スキャン結果:</h2>
-        <div id="qr-reader-results">
-            読み取られたQRコードのデータがここに表示されます。
+        <div class="stamp-grid" id="stamp-grid">
         </div>
 
+        <p class="camera-permission-info">
+            ※QRコードスキャン時にはカメラの許可を求められますので、**「許可」**を選択してください。
+        </p>
+        <p class="camera-instruction">
+        <span class="highlight">重要：</span>QRコードスキャン時には、ブラウザからカメラの使用許可を求められます。表示されたダイアログで必ず「**許可**」を選択してください。
+    もしカメラが起動しない場合は、スマートフォンの設定アプリからChromeのカメラアクセスを許可してください。
+        </p>
+        <button id="qr-scanner-button">QRコードをスキャンしてスタンプを取得</button>
+
+        <div id="qr-reader"></div>
+        <div id="qr-reader-results"></div>
+
+        <div id="completion-message">
+            全てのスタンプを集めました！おめでとうございます！
+        </div>
     </div>
 
     <script>
+        const totalStamps = 5; // スタンプの総数
+        const stampLocations = {
+            "qr_code_value_1": { id: 0, name: "地点A" },
+            "qr_code_value_2": { id: 1, name: "地点B" },
+            "qr_code_value_3": { id: 2, name: "地点C" },
+            "qr_code_value_4": { id: 3, name: "地点D" },
+            "qr_code_value_5": { id: 4, name: "地点E" }
+            // 実際のQRコードの値とスタンプの対応をここに記述
+            // idは0から始まる連番
+        };
+
+        let stamps = Array(totalStamps).fill(false); // スタンプの取得状況を管理 (false: 未取得, true: 取得済み)
+
+        const stampGrid = document.getElementById('stamp-grid');
         const qrScannerButton = document.getElementById('qr-scanner-button');
         const qrReader = document.getElementById('qr-reader');
         const qrReaderResults = document.getElementById('qr-reader-results');
+        const completionMessage = document.getElementById('completion-message');
 
-        let html5QrCode = null; // Html5Qrcodeインスタンスを保持する変数
+        let html5QrCode = null;
 
+        // スタンプの状態をローカルストレージから読み込む
+        function loadStamps() {
+            const savedStamps = localStorage.getItem('stampRallyStamps');
+            if (savedStamps) {
+                stamps = JSON.parse(savedStamps);
+            }
+            renderStamps();
+            checkCompletion();
+        }
+
+        // スタンプの状態をローカルストレージに保存する
+        function saveStamps() {
+            localStorage.setItem('stampRallyStamps', JSON.stringify(stamps));
+        }
+
+        // スタンプ表示の更新
+        function renderStamps() {
+            stampGrid.innerHTML = '';
+            for (let i = 0; i < totalStamps; i++) {
+                const stampItem = document.createElement('div');
+                stampItem.classList.add('stamp-item');
+
+                const img = document.createElement('img');
+                // 未取得時のデフォルト画像（例えば枠だけのスタンプ画像）
+                // 仮でplaceholder画像を使用。実際に運用する際は、未取得用の画像を配置してください
+                img.src = `https://via.placeholder.com/60/cccccc/FFFFFF?text=Stamp${i + 1}`; 
+                
+                // 取得済みの場合
+                if (stamps[i]) {
+                    stampItem.classList.add('stamped');
+                    // 取得済みスタンプの画像（stamp_collected_1.png などのように連番で用意）
+                    // 実際のファイル名に合わせて変更してください
+                    img.src = `stamp_collected_${i + 1}.png`; 
+                }
+                
+                stampItem.appendChild(img);
+
+                // スタンプ下のラベル（地点名など）
+                const stampLabel = document.createElement('span');
+                stampLabel.classList.add('stamp-label');
+                // stampLocationsから対応する地点名を取得
+                const locationKey = Object.keys(stampLocations).find(key => stampLocations[key].id === i);
+                if (locationKey) {
+                    stampLabel.textContent = stampLocations[locationKey].name;
+                } else {
+                    stampLabel.textContent = `スタンプ ${i + 1}`;
+                }
+                stampItem.appendChild(stampLabel);
+
+                stampGrid.appendChild(stampItem);
+            }
+        }
+
+        // QRコードスキャナーの開始
         qrScannerButton.addEventListener('click', () => {
-            // ボタンがクリックされたら、QRリーダーを表示し、ボタンを非表示にする
             qrReader.style.display = 'block';
-            qrScannerButton.style.display = 'none';
-            qrReaderResults.innerHTML = '<span class="info-message">カメラを起動中...</span>'; // 読み取り結果を初期化
+            qrScannerButton.style.display = 'none'; // スキャン中はボタンを非表示に
+            qrReaderResults.textContent = ''; // スキャン開始時に結果をクリア
 
-            // html5QrCodeインスタンスがまだ生成されていなければ生成する
-            if (html5QrCode === null) {
+            if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("qr-reader");
             }
 
-            // カメラの起動とQRコードスキャンの開始
             html5QrCode.start(
-                { facingMode: "environment" }, // 背面カメラを使用
+                { facingMode: "environment" }, // スマートフォンの背面カメラを使用
                 {
-                    fps: 10,  // フレームレート
-                    qrbox: { width: 250, height: 250 } // QRコードの読み取り範囲のボックスサイズ
+                    fps: 10,    // スキャンレート
+                    qrbox: { width: 250, height: 250 } // QRコードの読み取り範囲
                 },
                 (decodedText, decodedResult) => {
-                    // QRコードが正常に読み取られた時の処理
-                    qrReaderResults.innerHTML = `<strong>成功:</strong> ${decodedText}`;
-                    qrReaderResults.style.color = '#333'; // 通常のテキスト色に戻す
-
-                    // スキャンが成功したらカメラを停止し、UIを元に戻す
+                    // QRコードが読み取られた時の処理
+                    qrReaderResults.textContent = `読み取り成功: ${decodedText}`;
+                    handleQrCodeScan(decodedText);
                     html5QrCode.stop().then(() => {
                         qrReader.style.display = 'none';
-                        qrScannerButton.style.display = 'block';
-                        // html5QrCode = null; // 再スキャン時にインスタンスを再生成する場合はコメントアウトを外す
+                        checkCompletion();
                     }).catch((err) => {
-                        console.error("QRスキャナー停止エラー:", err);
-                        qrReaderResults.innerHTML += `<br><span class="error-message">スキャナー停止時にエラーが発生しました。</span>`;
+                        let userMessage = `カメラの起動に失敗しました。`;
+                        if (err.name === 'NotAllowedError') {
+                             userMessage += `カメラの使用が許可されていません。スマートフォンの「設定」アプリから、Chrome（または利用中のブラウザ）のカメラアクセスを許可してください。`;
+                        } else if (err.name === 'NotFoundError') {
+                        userMessage += `利用可能なカメラが見つかりませんでした。スマートフォンにカメラが搭載されているか、他のアプリで使用中でないかご確認ください。`;
+                         } else {
+                          userMessage += `予期せぬエラーが発生しました（${err.message}）。ブラウザを再起動するか、スマートフォンを再起動してもう一度お試しください。`;
+                        }
+                        qrReaderResults.textContent = userMessage;
+                        qrReaderResults.style.color = '#dc3545'; // エラーメッセージの色を強調
+                        qrReader.style.display = 'none';
+                        qrScannerButton.style.display = 'block';
+                        console.error("カメラ起動エラー:", err);
                     });
                 },
                 (errorMessage) => {
-                    // QRコードが読み取れない時の処理 (エラーログは表示しないことが多い)
+                    // QRコードが読み取れない時の処理（エラーログを表示しない）
                     // console.warn(`QRコードスキャンエラー: ${errorMessage}`);
                 }
             ).catch((err) => {
-                // カメラ起動失敗時のエラー処理 (ユーザーへのフィードバック)
-                let userMessage = `<strong>カメラの起動に失敗しました。</strong><br>`;
+                // カメラ起動失敗時のエラー処理
+                let userMessage = `カメラの起動に失敗しました。`;
                 if (err.name === 'NotAllowedError') {
-                    userMessage += `カメラの使用が許可されていません。<br>ブラウザやスマートフォンの設定でカメラへのアクセスを許可してください。`;
+                    userMessage += `カメラの使用が許可されていません。ブラウザやOSの設定でカメラへのアクセスを許可してください。`;
                 } else if (err.name === 'NotFoundError') {
-                    userMessage += `利用可能なカメラが見つかりませんでした。<br>別のカメラが使用中でないかご確認ください。`;
+                    userMessage += `利用可能なカメラが見つかりませんでした。`;
                 } else {
-                    userMessage += `予期せぬエラーが発生しました。<br>エラーコード: ${err.message}`;
+                    userMessage += `エラーコード: ${err.message}`;
                 }
-                qrReaderResults.innerHTML = `<span class="error-message">${userMessage}</span>`;
+                qrReaderResults.textContent = userMessage;
                 qrReader.style.display = 'none';
                 qrScannerButton.style.display = 'block';
-                console.error("カメラ起動エラー:", err); // 開発者向けの詳細なログ
+                console.error("カメラ起動エラー:", err);
             });
         });
+
+        // QRコードスキャン結果の処理
+        function handleQrCodeScan(qrValue) {
+            if (stampLocations[qrValue] !== undefined) {
+                const stampId = stampLocations[qrValue].id;
+                if (!stamps[stampId]) {
+                    stamps[stampId] = true;
+                    saveStamps();
+                    renderStamps();
+                    checkCompletion();
+                    alert(`スタンプ「${stampLocations[qrValue].name}」を取得しました！`);
+                } else {
+                    alert(`このスタンプ「${stampLocations[qrValue].name}」は既に取得済みです。`);
+                }
+            } else {
+                alert('無効なQRコードです。');
+            }
+        }
+
+        // 全てのスタンプが取得されたかチェック
+        function checkCompletion() {
+            const allStamped = stamps.every(stamp => stamp === true);
+            if (allStamped) {
+                completionMessage.style.display = 'block';
+                qrScannerButton.style.display = 'none'; // 全て取得したらQRボタンを非表示
+                qrReaderResults.style.display = 'none'; // 結果表示も非表示に
+            } else {
+                completionMessage.style.display = 'none';
+                qrReaderResults.style.display = 'block'; // 結果表示を再度表示
+                // QRリーダーが非表示（停止）の場合のみボタンを表示
+                if (qrReader.style.display === 'none') {
+                    qrScannerButton.style.display = 'block';
+                }
+            }
+        }
+
+        // ページロード時に実行
+        document.addEventListener('DOMContentLoaded', loadStamps);
     </script>
 </body>
 </html>
