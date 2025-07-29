@@ -189,14 +189,14 @@
                 const img = document.createElement('img');
                 // 未取得時のデフォルト画像（例えば枠だけのスタンプ画像）
                 // 仮でplaceholder画像を使用。実際に運用する際は、未取得用の画像を配置してください
-                img.src = `https://via.placeholder.com/60/cccccc/FFFFFF?text=Stamp${i + 1}`; 
+                img.src = `images/stamp_placeholder.png`; 
                 
                 // 取得済みの場合
                 if (stamps[i]) {
                     stampItem.classList.add('stamped');
                     // 取得済みスタンプの画像（stamp_collected_1.png などのように連番で用意）
                     // 実際のファイル名に合わせて変更してください
-                    img.src = `stamp${i + 1}.png`; 
+                    img.src = `images/stamp${i + 1}.png`; 
                 }
                 
                 stampItem.appendChild(img);
