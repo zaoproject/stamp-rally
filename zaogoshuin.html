@@ -114,6 +114,7 @@
             text-align: center;
             margin-top: 10px;
         }
+        
     </style>
     <script src="./html5-qrcode.min.js"></script>
 </head>
@@ -314,5 +315,23 @@
         // ページロード時に実行
         document.addEventListener('DOMContentLoaded', loadStamps);
     </script>
+    <button id="reset-button" style="margin-top: 20px; padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">スタンプをリセット</button>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const resetButton = document.getElementById('reset-button');
+        if (resetButton) {
+            resetButton.addEventListener('click', () => {
+                if (confirm('全てのスタンプの取得状況をリセットしてもよろしいですか？')) {
+                    localStorage.removeItem('stampRallyStamps'); // ローカルストレージからデータを削除
+                    stamps = Array(totalStamps).fill(false); // スタンプの配列を初期化
+                    renderStamps(); // 表示を更新
+                    checkCompletion(); // 達成メッセージをチェック
+                    alert('スタンプの取得状況をリセットしました。');
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>
