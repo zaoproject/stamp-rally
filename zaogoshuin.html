@@ -47,14 +47,18 @@
             border: 2px solid #28a745;
             background-color: #e6ffe6;
         .stamp-item img {
-            max-width: 100%; /* 親要素の幅に合わせて最大幅にする */
+        /* 既存のプロパティはそのまま */
+            max-width: 90%; /* 親要素の90%に制限 (例) */
+            max-height: 90px; /* 画像の最大高さを固定 (例: 適宜調整してください) */
             height: auto;    /* アスペクト比を維持 */
-            display: block;  /* 常に表示 */
-            filter: grayscale(100%); /* 未取得時はグレーアウト */
-            opacity: 0.6;    /* 未取得時は少し透明に */
-            /* ↓↓ ここから追加・変更 ↓↓ */
-            width: 100%;     /* 親要素の幅いっぱいに広げる */
-            object-fit: contain; /* 画像全体を表示し、アスペクト比を維持 */
+            display: block;
+            filter: grayscale(100%);
+            opacity: 0.6;
+    
+            /* width: 100%; <-- この行は削除、またはコメントアウト */
+            object-fit: contain;
+    
+            margin: 0 auto; /* 画像を中央に配置 */
         }
         .stamp-item.stamped img {
             filter: grayscale(0%); /* 取得済み時はカラー */
